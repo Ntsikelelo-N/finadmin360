@@ -1,0 +1,31 @@
+# Secrets — never commit these
+.env
+
+# Python environment — too large to commit
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Raw data — too large and gitignored for privacy
+data/raw/
+data/synthetic/
+
+# ML experiment tracking — generated, not source
+mlruns/
+
+# Test coverage reports — generated
+htmlcov/
+.coverage
+coverage.xml
+
+# IDE files
+.DS_Store
+.idea/
+.vscode/
+
+# dbt generated files
+dbt/target/
+dbt/.user.yml
