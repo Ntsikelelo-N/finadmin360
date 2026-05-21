@@ -30,3 +30,9 @@ coverage.xml
 dbt/target/
 dbt/.user.yml
 .terraform/
+
+# Terraform state (contains secrets)
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.tfstate.*.backup
+.terraform/
