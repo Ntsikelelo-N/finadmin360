@@ -29,3 +29,4 @@ coverage.xml
 # dbt generated files
 dbt/target/
 dbt/.user.yml
+.terraform/
