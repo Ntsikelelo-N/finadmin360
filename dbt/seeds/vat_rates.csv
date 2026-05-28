@@ -1,0 +1,4 @@
+rate_code,rate_name,rate_value,effective_from,effective_to,notes
+STD,Standard rate,0.15,2018-04-01,,Current SA standard VAT rate raised from 14% in April 2018
+ZERO,Zero-rated,0.00,1991-09-29,,Exports and certain food items
+EXEMPT,VAT exempt,0.00,1991-09-29,,Financial services and residential rent
