@@ -46,4 +46,3 @@ SELECT
         1
     ) AS mom_growth_rate_pct
 FROM monthly
-ORDER BY year_month

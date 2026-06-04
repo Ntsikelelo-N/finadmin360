@@ -61,4 +61,3 @@ SELECT
     sc.payment_risk_tier
 FROM scored sc
 JOIN suppliers s ON sc.supplier_id = s.supplier_id
-ORDER BY sc.late_payment_pct DESC

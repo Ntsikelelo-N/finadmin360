@@ -49,4 +49,3 @@ SELECT
     -- This is the figure you key into SARS eFiling (input tax claimable)
     ROUND(claimable_vat_input_tax, 2) AS claimable_vat_input_tax
 FROM monthly_vat
-ORDER BY year_month

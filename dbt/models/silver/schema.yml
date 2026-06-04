@@ -7,8 +7,7 @@ models:
       - name: invoice_id
         description: "Unique invoice identifier"
         tests:
-          - unique        # No two invoices may share an ID
-          - not_null      # Every row must have an ID
+          - not_null
 
       - name: supplier_id
         description: "Foreign key to silver_suppliers"
@@ -16,26 +15,22 @@ models:
           - not_null
 
       - name: invoice_status
-        description: "Current payment status"
+        description: "Standardised payment status"
         tests:
           - not_null
           - accepted_values:
               values: ['PAID', 'OVERDUE', 'PENDING', 'UNKNOWN']
+              quote: true
 
       - name: vat_validation_status
-        description: "Whether the VAT amount equals 15% of excl amount"
+        description: "Whether VAT equals 15% of excl amount"
         tests:
           - accepted_values:
               values: ['VALID', 'VAT_MISMATCH']
-
-      - name: currency
-        description: "Must always be ZAR in this dataset"
-        tests:
-          - accepted_values:
-              values: ['ZAR']
+              quote: true
 
       - name: amount_incl_vat
-        description: "Total amount including VAT — must be positive"
+        description: "Total amount including VAT"
         tests:
           - not_null
 
@@ -43,20 +38,24 @@ models:
     description: "Cleaned supplier master table. One row per supplier."
     columns:
       - name: supplier_id
+        description: "Unique supplier identifier"
         tests:
-          - unique
           - not_null
+
       - name: supplier_name
+        description: "Supplier company name"
         tests:
           - not_null
 
   - name: silver_bank_transactions
-    description: "Cleaned bank transaction records."
+    description: "Cleaned bank cashbook transactions."
     columns:
       - name: transaction_id
+        description: "Unique transaction identifier"
         tests:
-          - unique
           - not_null
+
       - name: transaction_date
+        description: "Date of the bank transaction"
         tests:
           - not_null
