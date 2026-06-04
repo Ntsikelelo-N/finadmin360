@@ -1,0 +1,22 @@
+name: 'finadmin360'
+version: '1.0.0'
+config-version: 2
+
+profile: 'finadmin360'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+models:
+  finadmin360:
+    silver:
+      +materialized: view
+      +schema: silver
+      +pre-hook:
+        - "IF OBJECT_ID(N'{{ this.schema }}.{{ this.name }}', 'V') IS NOT NULL DROP VIEW {{ this.schema }}.{{ this.name }}"
+    gold:
+      +materialized: view
+      +schema: gold
+      +pre-hook:
+        - "IF OBJECT_ID(N'{{ this.schema }}.{{ this.name }}', 'V') IS NOT NULL DROP VIEW {{ this.schema }}.{{ this.name }}"

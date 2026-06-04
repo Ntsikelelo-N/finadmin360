@@ -1,0 +1,36 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw data landed in ADLS Gen2 Bronze zone by ADF and ingestion scripts"
+    schema: bronze
+    tables:
+      - name: sa_invoices
+        description: "Raw supplier invoices — synthetic SA data"
+        columns:
+          - name: invoice_id
+            description: "Unique invoice identifier"
+          - name: supplier_id
+            description: "Foreign key to sa_suppliers"
+          - name: invoice_date
+            description: "Date invoice was issued"
+          - name: due_date
+            description: "Date payment is contractually due"
+          - name: payment_date
+            description: "Date payment was made — NULL if unpaid"
+          - name: amount_excl_vat
+            description: "Invoice amount before VAT in ZAR"
+          - name: vat_amount
+            description: "VAT at 15% of amount_excl_vat"
+          - name: amount_incl_vat
+            description: "Total payable including VAT"
+          - name: currency
+            description: "ISO currency code — always ZAR"
+          - name: invoice_status
+            description: "Paid, Overdue, or Pending"
+
+      - name: sa_suppliers
+        description: "Supplier master table — synthetic SA data"
+
+      - name: sa_bank_transactions
+        description: "Bank cashbook transactions — synthetic SA data"
