@@ -1,0 +1,55 @@
+name: CI — Lint and Test
+
+# Run this workflow on every pull request targeting develop or main
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download the code from the branch being tested
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python 3.11
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'  # Cache pip packages so subsequent runs are faster
+
+      # Step 3: Install all dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 4: Check code formatting with Black
+      # If Black would change any file, the CI fails
+      - name: Check formatting with Black
+        run: black --check src/ dags/ tests/
+
+      # Step 5: Lint with Ruff — catches common Python errors
+      - name: Lint with Ruff
+        run: ruff check src/ dags/ tests/
+
+      # Step 6: Run unit tests with pytest
+      # --tb=short: shorter traceback format for readability
+      # --cov=src: measure test coverage of the src/ directory
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ \
+            --tb=short \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=term-missing
+        env:
+          PYTHONPATH: .
+
+      # Step 7: Upload the coverage report so you can see it on GitHub
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false

@@ -38,3 +38,6 @@ terraform/*.tfstate.*.backup
 .terraform/
 .env
 dbt/logs/
+env/
+target/
+mlflow.db
