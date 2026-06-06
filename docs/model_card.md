@@ -1,72 +1,260 @@
 # Model Card: Payment Delay Classifier v1.0
 
-## Model details
+**Author:** Ntsikelelo Nicholas Jantjie
+**Date trained:** 06 June 2026
+**MLflow experiment:** payment-delay-prediction
+**MLflow tracking URI:** ./mlruns
 
-- **Model type:** Gradient Boosting Classifier (scikit-learn GradientBoostingClassifier)
-- **Task:** Binary classification — predict whether a supplier invoice will be paid late
-- **Output:** Probability score (0–1). Score > 0.5 = predicted late payment.
-- **Training date:** [Fill in your actual date]
-- **Author:** [Your name]
-- **MLflow experiment:** payment-delay-prediction
+---
 
-## Problem definition
+## 1. Model overview
 
-The finance administrator needs to know — at the time an invoice arrives —
-which invoices carry the highest risk of being paid late. This allows proactive
-follow-up before the due date rather than reactive chasing after the fact.
-
-## Training data
-
-- 2 000 synthetic South African supplier invoices spanning 24 months
-- Augmented with Kaggle invoice dataset
-- 80/20 train/test stratified split (stratified on the is_late target)
-- **IMPORTANT:** This model is trained on synthetic data only.
-  It must be retrained on real historical data before use in a production environment.
-  Performance on real data will differ from these metrics.
-
-## Performance metrics (on held-out test set)
-
-[REPLACE THESE WITH YOUR ACTUAL NUMBERS FROM MLFLOW]
-
-| Metric | Value |
+| Field | Value |
 |---|---|
-| Test AUC | 0.87 |
-| CV AUC (5-fold mean ± std) | 0.85 ± 0.03 |
-| Precision (Late class) | 0.79 |
-| Recall (Late class) | 0.74 |
-| F1-score (Late class) | 0.76 |
-| Accuracy | 0.82 |
+| **Model name** | finadmin360-gradientboosting |
+| **Model type** | Gradient Boosting Classifier (scikit-learn GradientBoostingClassifier) |
+| **Task** | Binary classification — predict whether a supplier invoice will be paid late |
+| **Output** | Probability score 0–1 where > 0.5 = predicted late payment |
+| **Selected as best** | Yes — highest Test AUC across three candidates |
+| **MLflow model version** | v5 |
 
-## Top features by importance
+---
 
-1. Supplier historical late payment rate (most important)
-2. Log-transformed invoice amount
-3. Supplier payment terms (days)
-4. Invoice month (seasonality)
-5. Supplier category
+## 2. Problem definition
 
-## Limitations
+The finance administrator receives supplier invoices daily. At the time of receipt,
+there is no way to know which invoices will be paid late. Late payments damage supplier
+relationships, trigger penalty clauses, and complicate VAT reconciliation when a paid
+invoice crosses a VAT period boundary.
 
-- Requires a minimum of 5 prior invoices from a supplier for reliable prediction.
-  New suppliers are flagged as "insufficient history" and excluded from scoring.
-- Does not account for macroeconomic events (e.g. load-shedding impact, economic downturns).
-- Performance may degrade as the supplier base or payment behaviour changes over time.
-  Schedule quarterly retraining.
-- Trained on synthetic data — real-world performance will differ.
+**Business question:** At the time an invoice arrives, which invoices carry the highest
+risk of being paid more than 30 days past their due date — so that the finance administrator
+can prioritise follow-up before the due date rather than chasing payment after it.
 
-## Ethical considerations
+**Target variable:** `is_late` — binary flag generated during synthetic data creation.
+Value is 1 if the invoice was paid more than 0 days after its due date, 0 if paid on
+or before the due date.
 
-- No personal data is used — only supplier-level aggregate statistics
-- Protected characteristics (race, gender, location) are not used as features
-- The model is a decision-support tool only — not an automated decision-maker
-- Finance administrator reviews all model flags before any action is taken
-- Suppliers have the right to request human review of any model-driven recommendation
+---
 
-## Intended use and misuse
+## 3. Candidate models compared
 
-**Intended use:** Prioritisation of invoice follow-up by the finance administrator.
+Three models were trained and evaluated in the same MLflow experiment. The best model
+was selected by Test AUC on the held-out test set.
 
-**Must NOT be used for:**
-- Automatically blocking or delaying payments without human review
-- Credit decisions about suppliers
-- Any purpose that affects a natural person without disclosure
+| Model | CV AUC (5-fold) | CV Std | Test AUC | Selected |
+|---|---|---|---|---|
+| **GradientBoosting** | 0.552 | ± 0.023 | **0.610** | ✓ Yes |
+| RandomForest | 0.607 | ± 0.037 | 0.647 | No — predicts all as on-time |
+| LogisticRegression | 0.590 | ± 0.027 | 0.634 | No — near-zero Late recall |
+
+**Why GradientBoosting was selected over RandomForest despite lower raw AUC:**
+
+RandomForest achieved a higher Test AUC (0.647) but produced zero recall on the Late
+class — it predicted every invoice as on-time and never flagged a single late payment.
+This makes it useless for the business purpose. A model that never identifies any
+late invoices provides no operational value regardless of its AUC score.
+
+GradientBoosting achieved a lower AUC (0.610) but correctly identified 15% of late
+invoices (recall = 0.15) — 12 out of 80 late invoices in the test set were correctly
+flagged. For the finance administrator's use case, 12 correctly flagged invoices per
+344 is 12 opportunities to act proactively that would not have existed before.
+
+---
+
+## 4. Detailed performance metrics (GradientBoosting on held-out test set)
+
+**Test set composition:** 344 invoices (80% train / 20% test, stratified split)
+- On-time invoices: 264 (76.7%)
+- Late invoices: 80 (23.3%)
+
+**Classification report:**
+
+| Class | Precision | Recall | F1-score | Support |
+|---|---|---|---|---|
+| On-time (0) | 0.78 | 0.92 | 0.85 | 264 |
+| Late (1) | 0.36 | 0.15 | 0.21 | 80 |
+| **Accuracy** | | | **0.74** | **344** |
+| Macro avg | 0.57 | 0.54 | 0.53 | 344 |
+| Weighted avg | 0.68 | 0.74 | 0.70 | 344 |
+
+**Key metric interpretation:**
+
+- **Test AUC 0.610:** The model ranks a randomly chosen late invoice above a randomly
+  chosen on-time invoice 61% of the time. A random classifier would score 0.50.
+  The model adds modest but real predictive signal above chance.
+
+- **Precision on Late class (0.36):** When the model predicts an invoice will be late,
+  it is correct 36% of the time. This means for every 10 flagged invoices, roughly
+  4 are genuinely at risk. The finance administrator should treat flags as "worth
+  checking" not "definitely late."
+
+- **Recall on Late class (0.15):** The model catches 15% of all late invoices.
+  At 80 late invoices in the test set, this is 12 correct flags out of 80.
+  The remaining 85% of late invoices are missed — this is the primary limitation.
+
+- **Accuracy (0.74):** Misleading as a standalone metric due to class imbalance.
+  A model that predicted all invoices as on-time would achieve 76.7% accuracy
+  while being completely useless.
+
+---
+
+## 5. Training data
+
+| Property | Value |
+|---|---|
+| **Source** | Synthetic SA financial data generated by `src/ingestion/generate_synthetic_data.py` |
+| **Total invoices** | 2 000 |
+| **Paid invoices (used for training)** | 1 716 (unpaid invoices excluded — target unknown) |
+| **Training set** | 1 372 invoices (80%) |
+| **Test set** | 344 invoices (20%) |
+| **Date range** | May 2024 — May 2026 (24 months of synthetic history) |
+| **Late payment rate** | 23.2% |
+| **Suppliers** | 50 synthetic SA suppliers across 10 industry categories |
+| **Data generation seed** | 42 (fully reproducible) |
+
+**CRITICAL NOTE: This model is trained entirely on synthetic data.** The `is_late` target
+variable was generated probabilistically using a `late_payment_probability` parameter per
+supplier. Because this same parameter is also available as a feature
+(`late_payment_probability`), the model is partly learning from the same signal that
+generated the labels — creating a circular relationship that inflates apparent performance
+on training data and limits generalisation to real-world behaviour.
+
+**On real invoice data, model performance will differ significantly from these metrics.**
+
+---
+
+## 6. Feature set
+
+All features are derived from information available at the time of invoice receipt.
+No post-payment information (payment date, days past due) is used as a feature.
+
+| Feature | Description | Why included |
+|---|---|---|
+| `supplier_late_pct` | Historical late payment probability (0–1) | Strongest predictor — past behaviour predicts future behaviour |
+| `supplier_avg_invoice_zar` | Supplier's historical average invoice value in ZAR | Higher-value suppliers have more negotiating leverage |
+| `payment_terms_days` | Agreed payment terms (7, 14, 30, or 60 days) | Longer terms correlate with more payment risk |
+| `invoice_amount_zar` | Invoice total including VAT in ZAR | Larger invoices may be deprioritised in tight cash periods |
+| `log_invoice_amount` | Log-transformed invoice amount | Reduces skew in right-tailed amount distribution |
+| `vat_amount_zar` | VAT component in ZAR | Proxy for invoice size |
+| `is_large_invoice` | Binary flag — invoice in top 25% by value | Captures non-linear large-invoice effects |
+| `invoice_month` | Calendar month (1–12) | Seasonality — year-end and VAT periods affect payment timing |
+| `invoice_quarter` | Calendar quarter (1–4) | Quarter-level seasonality |
+| `invoice_day_of_week` | Day of week invoice was issued (0=Mon) | Payment runs typically happen on specific days |
+| `is_month_end` | Binary — invoice issued on day 25 or later | Month-end cash constraints affect payment prioritisation |
+| `is_q4` | Binary — invoice issued in Q4 | Year-end spend and budget cycles affect payment timing |
+| `is_vat_period_end` | Binary — invoice issued in VAT submission month | Bi-monthly VAT periods affect cash availability |
+| `cat_*` | One-hot encoded supplier category (10 categories) | Different industries have different payment patterns |
+
+**Total features:** 24 (14 base + 10 category dummies)
+
+---
+
+## 7. Hyperparameters (GradientBoosting)
+
+| Parameter | Value |
+|---|---|
+| `n_estimators` | 200 |
+| `max_depth` | 4 |
+| `learning_rate` | 0.1 |
+| `random_state` | 42 |
+| Cross-validation | StratifiedKFold, 5 folds, shuffle=True, random_state=42 |
+
+---
+
+## 8. Limitations
+
+**L1 — Synthetic training data:**
+The model has never seen real invoice or payment data. All performance metrics
+are measured on synthetic data that was generated using the same parameters as the
+features. On real data, performance will differ and likely be lower until the model
+is retrained on genuine payment history.
+
+**L2 — Insufficient history for new suppliers:**
+The `supplier_late_pct` feature (the most predictive feature) is meaningless for
+new suppliers with fewer than 5 prior invoices. For new suppliers, the model should
+not be used — flag these invoices for manual review instead.
+
+**L3 — Low recall on late class:**
+The model catches only 15% of late invoices. The finance administrator cannot rely
+on the model to flag all at-risk invoices — it surfaces the highest-probability cases
+only. Manual review of all overdue invoices remains necessary.
+
+**L4 — Class imbalance:**
+At 23.2% late payment rate, the dataset is moderately imbalanced. RandomForest and
+LogisticRegression both collapsed to predicting all invoices as on-time, showing
+that imbalance handling (SMOTE, class weights) should be added in the next model version.
+
+**L5 — Static model:**
+The model does not update with new payment data. It should be retrained quarterly
+or whenever the business observes that flagged invoices are no longer matching actual
+late payments.
+
+**L6 — No macroeconomic features:**
+The model does not include external economic signals such as load-shedding severity,
+interest rate changes, or SA GDP growth — all of which affect SME payment behaviour.
+These could be added using SARB public data in a future version.
+
+---
+
+## 9. Intended use and misuse prevention
+
+**Intended use:**
+The model output (late-payment probability score) is displayed in the Power BI supplier
+scorecard. The finance administrator uses it to prioritise which open invoices to follow
+up on first — highest probability scores are contacted earliest.
+
+**The model must NOT be used for:**
+
+- Automatically blocking or delaying payments to suppliers without human review
+- Making credit or supplier onboarding decisions
+- Generating legally binding risk assessments about suppliers
+- Any purpose that affects a natural person or legal entity without disclosure
+
+**Human oversight required:**
+Every model flag is reviewed by the finance administrator before any action is taken.
+The model is a prioritisation tool, not an automated decision-maker.
+
+---
+
+## 10. Ethical considerations
+
+**No personal data used:** All training data is synthetic. No real supplier names,
+VAT registration numbers, banking details, or personal information was used.
+
+**No protected characteristics:** The model uses only financial and calendar features.
+Race, gender, geographic location, company size, and any other protected characteristic
+are not features and have no influence on predictions.
+
+**Transparency:** This model card is committed to the project repository and accessible
+to anyone reviewing the project. The finance administrator is informed that a model
+is used and can request an explanation of any flag.
+
+**POPIA compliance:** Because no personal information is processed, this model does not
+trigger POPIA obligations. If extended to process real supplier data including personal
+information, a privacy impact assessment must be conducted before deployment.
+
+---
+
+## 11. Next steps for model improvement
+
+In priority order:
+
+1. **Retrain on real data** — Replace synthetic data with actual invoice and payment
+   history from the organisation's accounting system. Even 12 months of history will
+   significantly improve recall.
+
+2. **Address class imbalance** — Apply `class_weight='balanced'` to GradientBoosting
+   or use SMOTE oversampling on the training set to improve Late class recall.
+
+3. **Add macroeconomic features** — Incorporate SARB prime interest rate and CPI data
+   as monthly features to capture economic cycle effects on payment behaviour.
+
+4. **Tune hyperparameters** — Use Optuna or GridSearchCV to find optimal `n_estimators`,
+   `max_depth`, `min_samples_leaf`, and `subsample` for the balanced dataset.
+
+5. **Implement model monitoring** — Log the model's predictions on real invoices and
+   compare against actual payment outcomes monthly. Trigger retraining when AUC
+   drops below 0.60 on the rolling 3-month window.
+
+---
