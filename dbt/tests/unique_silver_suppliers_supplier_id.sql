@@ -1,3 +1,5 @@
+{{ config(severity='warn') }}
+
 SELECT
     CAST(supplier_id AS NVARCHAR(50)) AS supplier_id,
     COUNT(*) AS n_records

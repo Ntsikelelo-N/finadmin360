@@ -11,6 +11,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+    MLFLOW_TRACKING_URI: 'sqlite:////opt/airflow/mlflow.db'
+    MLFLOW_ALLOW_FILE_STORE: 'true'
     _PIP_ADDITIONAL_REQUIREMENTS: >-
       azure-storage-file-datalake
       azure-identity
@@ -18,6 +20,9 @@ x-airflow-common: &airflow-common
       pyarrow
       python-dotenv
       mlflow
+      dbt-core==1.8.0
+      dbt-synapse==1.8.4
+
   env_file:
     - .env
   volumes:
@@ -25,6 +30,9 @@ x-airflow-common: &airflow-common
     - ./logs:/opt/airflow/logs
     - ./src:/opt/airflow/src
     - ./dbt:/opt/airflow/dbt
+    - ./data:/opt/airflow/data
+    - ./mlflow.db:/opt/airflow/mlflow.db
+    - ./mlflow.db:/opt/airflow/mlflow.db
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     postgres:

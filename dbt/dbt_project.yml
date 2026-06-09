@@ -4,6 +4,10 @@ config-version: 2
 
 profile: 'finadmin360'
 
+dispatch:
+  - macro_namespace: dbt
+    search_order: ['finadmin360', 'dbt_synapse', 'dbt']
+
 model-paths: ["models"]
 test-paths: ["tests"]
 macro-paths: ["macros"]
@@ -13,10 +17,6 @@ models:
     silver:
       +materialized: view
       +schema: silver
-      +pre-hook:
-        - "IF OBJECT_ID(N'{{ this.schema }}.{{ this.name }}', 'V') IS NOT NULL DROP VIEW {{ this.schema }}.{{ this.name }}"
     gold:
       +materialized: view
       +schema: gold
-      +pre-hook:
-        - "IF OBJECT_ID(N'{{ this.schema }}.{{ this.name }}', 'V') IS NOT NULL DROP VIEW {{ this.schema }}.{{ this.name }}"
