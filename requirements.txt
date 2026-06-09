@@ -172,8 +172,6 @@ python-slugify==8.0.4
 pytimeparse==1.1.8
 pytokens==0.4.1
 pytz==2026.2
-pywin32==311
-pywinpty==3.0.3
 PyYAML==6.0.3
 pyzmq==27.1.0
 referencing==0.37.0
