@@ -8,6 +8,7 @@ __pycache__/
 *.pyo
 *.pyd
 *.egg-info/
+.ipynb_checkpoints/
 
 # Raw data — too large and gitignored for privacy
 data/raw/
@@ -42,3 +43,4 @@ env/
 target/
 mlflow.db
 dbt/profiles.yml
+data/gold/
