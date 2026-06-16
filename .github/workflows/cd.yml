@@ -1,0 +1,79 @@
+name: CD — Deploy to Azure
+
+# NOTE: This workflow requires an active Azure subscription.
+# It is included as infrastructure-as-code documentation showing
+# how this project would deploy in a production environment.
+# To activate: provision an Azure account and add the required secrets.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-dbt:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt
+        run: pip install dbt-synapse==1.8.4 dbt-core==1.8.0
+
+      - name: Write profiles.yml for CI runner
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << PROFILE
+          finadmin360:
+            target: prod
+            outputs:
+              prod:
+                type: synapse
+                driver: 'ODBC Driver 18 for SQL Server'
+                server: ${{ secrets.SYNAPSE_SERVER }}
+                port: 1433
+                database: finadmin360
+                schema: dbt_prod
+                authentication: ActiveDirectoryServicePrincipal
+                tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+                client_id: ${{ secrets.AZURE_CLIENT_ID }}
+                client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+                encrypt: true
+                trust_cert: false
+                retries: 3
+          PROFILE
+
+      - name: Run dbt to production
+        run: |
+          cd dbt
+          dbt run --target prod --no-partial-parse
+          dbt test --target prod
+          dbt docs generate --target prod
+
+  deploy-dags:
+    runs-on: ubuntu-latest
+    needs: deploy-dbt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload DAGs to Azure Storage
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az storage blob upload-batch \
+              --account-name ${{ secrets.STORAGE_ACCOUNT }} \
+              --destination airflow-dags \
+              --source ./dags/ \
+              --overwrite
