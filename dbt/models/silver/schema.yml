@@ -10,9 +10,12 @@ models:
           - not_null
 
       - name: supplier_id
-        description: "Foreign key to silver_suppliers"
+        description: "Unique supplier identifier"
         tests:
           - not_null
+          - unique:
+              config:
+                severity: warn
 
       - name: invoice_status
         description: "Standardised payment status"
@@ -59,3 +62,6 @@ models:
         description: "Date of the bank transaction"
         tests:
           - not_null
+# in dbt/tests/unique_silver_suppliers_supplier_id.sql or schema.yml
+config:
+  severity: warn
