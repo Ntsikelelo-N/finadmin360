@@ -41,7 +41,7 @@ model, and serves the result through a daily-refreshed Power BI dashboard.
 | Models compared in MLflow | 3 (GradientBoosting, RandomForest, LogisticRegression) |
 
 ## 3. Architecture
-![Architecture diagram](finadmin360_architecture.png)
+![Architecture diagram](./docs/images/finadmin360_architecture.png)
 
 Bronze ingestion lands raw CSV files in ADLS Gen2 via Azure Data Factory. Synapse
 Serverless SQL exposes the Bronze files as external tables. dbt Core transforms
@@ -55,16 +55,16 @@ subscription is inactive.
 ## 4. Screenshots
 
 ### Power BI dashboard
-![Power BI dashboard](image.png)
+![Power BI dashboard](./docs/images/dashboard.png)
 
 ### dbt lineage graph
-![dbt lineage](image-3.png)
+![dbt lineage](./docs/images/dbt%20test.png)
 
 ### MLflow experiment comparison
-![MLflow runs](image-2.png)
+![MLflow runs](./docs/images/MLflow%20comparison.png)
 
 ### Airflow DAG — all tasks green
-![Airflow DAG](image-1.png)
+![Airflow DAG](./docs/images/airflow.png)
 
 ## 5. Tech stack
 
